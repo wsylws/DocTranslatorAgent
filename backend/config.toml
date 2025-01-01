@@ -1,0 +1,9 @@
+[openai]
+temperature = 0.1
+base_url = ""
+api_key = ""
+model = ""
+
+[llm]
+activate_llm = "OpenAILlm"
+llm_config = "openai"

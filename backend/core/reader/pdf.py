@@ -66,9 +66,15 @@ class PdfTextReader(BaseReader):
                     int(y1)
                 )
                 for block in text_blocks:
-                    if (block.x0 <= x0 and block.six_y0 <= y0 and
-                            block.x1 >= x1 and block.six_y1 >= y1):
+                    # Expand 1px
+                    if (block.x0 - 1 <= x0 and block.six_y0 - 1 <= y0 and
+                            block.x1 + 1 >= x1 and block.six_y1 + 1 >= y1):
                         block.text = block.text + text
+                        # Calculate percentages
+                        block.x0 = block.x0 / pix.width
+                        block.y0 = block.y0 / pix.height
+                        block.x1 = block.x1 / pix.width
+                        block.y1 = block.y1 / pix.height
                         block.font_size = self.get_max_font_size(element)
         return text_blocks
 
@@ -108,12 +114,16 @@ class PdfOcrReader(BaseReader):
 
         # Cutting small images for OCR
         for block in text_blocks:
-            #
             react = fitz.Rect(block.x0 - 2, block.y0 - 2, block.x1 + 2, block.y1 + 2)
             clip = doc_page.get_pixmap(clip=react)
             text, font_size = self.ocr_model.ocr(clip.tobytes("png"))
             block.text = text
             block.font_size = font_size
+            # Calculate percentages
+            block.x0 = block.x0 / pix.width
+            block.y0 = block.y0 / pix.height
+            block.x1 = block.x1 / pix.width
+            block.y1 = block.y1 / pix.height
         return text_blocks
 
 class MinerUReader(BaseReader):
@@ -122,16 +132,17 @@ class MinerUReader(BaseReader):
     """
 
     @staticmethod
-    def mineru_block_to_text_block(block, is_bold) -> TextBlock:
+    def mineru_block_to_text_block(block, is_bold, page_width, page_height) -> TextBlock:
         print(block)
         bbox = block['bbox']
         # Font size is taken from the first line
         first_line_bbox = block['lines'][0]['bbox']
         font_size = first_line_bbox[3] - first_line_bbox[1]
-        text_block = TextBlock(x0=bbox[0],
-                               y0=bbox[1],
-                               x1=bbox[2],
-                               y1=bbox[3],
+        # Calculate percentages
+        text_block = TextBlock(x0=bbox[0] / page_width,
+                               y0=bbox[1] / page_height,
+                               x1=bbox[2] / page_width,
+                               y1=bbox[3] / page_height,
                                text=merge_para_with_text(block),
                                type='text',
                                font_size=font_size,
@@ -140,23 +151,23 @@ class MinerUReader(BaseReader):
         return text_block
 
     @staticmethod
-    def para_to_text_block(para_block) -> List[TextBlock]:
+    def para_to_text_block(para_block, page_width, page_height) -> List[TextBlock]:
         para_type = para_block['type']
         text_blocks = []
         if para_type in [BlockType.Text, BlockType.List, BlockType.Index, BlockType.Title] and para_block['lines']:
-            text_blocks.append(MinerUReader.mineru_block_to_text_block(para_block, para_type == BlockType.Title))
+            text_blocks.append(MinerUReader.mineru_block_to_text_block(para_block, para_type == BlockType.Title, page_width, page_height))
         elif para_type == BlockType.Image:
             for block in para_block['blocks']:
                 if block['type'] == BlockType.ImageCaption and block['lines']:
-                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, True))
+                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, True, page_width, page_height))
                 if block['type'] == BlockType.ImageFootnote and block['lines']:
-                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, False))
+                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, False, page_width, page_height))
         elif para_type == BlockType.Table:
             for block in para_block['blocks']:
                 if block['type'] == BlockType.TableCaption and block['lines']:
-                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, True))
+                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, True, page_width, page_height))
                 if block['type'] == BlockType.TableFootnote and block['lines']:
-                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, False))
+                    text_blocks.append(MinerUReader.mineru_block_to_text_block(block, False, page_width, page_height))
 
         return text_blocks
 
@@ -167,11 +178,12 @@ class MinerUReader(BaseReader):
         for page_info in pdf_info_dict:
             paras_of_layout = page_info.get('para_blocks')
             page_idx = page_info.get('page_idx')
+            page_size = page_info.get('page_size')
             text_blocks = []
             if not paras_of_layout:
                 continue
             for para_block in paras_of_layout:
-                text_blocks.extend(MinerUReader.para_to_text_block(para_block))
+                text_blocks.extend(MinerUReader.para_to_text_block(para_block, page_size[0], page_size[1]))
             page_result = ReaderResult(page_no=page_idx, text_blocks=text_blocks)
             results.append(page_result)
         return results

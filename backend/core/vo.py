@@ -13,12 +13,12 @@ from pydantic import BaseModel
 
 
 class TextBlock(BaseModel):
-    x0: int
-    y0: int
-    six_y0: int = None
-    x1: int
-    y1: int
-    six_y1: int = None
+    x0: float
+    y0: float
+    six_y0: float = None
+    x1: float
+    y1: float
+    six_y1: float = None
     type: str
     text: Optional[str] = ''
     font_size: Optional[float] = None

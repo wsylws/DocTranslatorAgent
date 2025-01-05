@@ -33,15 +33,11 @@ class YOLOLayout(Layout):
         abandon_block = ["abandon", "figure", "table", "isolate_formula", "formula_caption"]
         for i, box in enumerate(det_res.boxes):
             x0, y0, x1, y1 = box.xyxy.squeeze()
-            x0, six_y0, x1, six_y1 = (
-                np.clip(int(x0 - 1), 0, w - 1),
-                np.clip(int(h - y1 - 1), 0, h - 1),
-                np.clip(int(x1 + 1), 0, w - 1),
-                np.clip(int(h - y0 + 1), 0, h - 1),
-            )
+            six_y0 = h - y1
+            six_y1 = h - y0
             type = det_res.names[int(box.cls)]
             if type not in abandon_block:
-                block = TextBlock(x0=x0, y0=int(y0 - 1), x1=x1, y1=int(y1 + 1), six_y0=six_y0, six_y1=six_y1,
+                block = TextBlock(x0=x0, y0=y0, x1=x1, y1=y1, six_y0=six_y0, six_y1=six_y1,
                                   type=type, is_bold='title' in type or 'caption' in type)
                 text_blocks.append(block)
         return text_blocks

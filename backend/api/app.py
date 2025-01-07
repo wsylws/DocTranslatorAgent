@@ -8,6 +8,7 @@
 # Description：
 """
 import asyncio
+import json
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
@@ -77,7 +78,17 @@ def get_readers():
 def get_translators():
     return JSONResponse(content=jsonable_encoder(list(translator_map.keys())))
 
+@app.get('/support_language')
+def get_translators():
+    return JSONResponse(content=[
+        {"English": "en"},
+        {"Chinese": "zh"},
+        {"Japanese": "jp"},
+        {"Korean": "kor"},
+        {"French": "fra"}
+    ])
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="192.168.0.107", port=8000)

@@ -20,13 +20,9 @@ from core.models.layout.yolo import YOLOLayout
 from core.models.ocr.paddle import PaddleOCR
 from core.reader.base import BaseReader
 from core.vo import ReaderResult, TextBlock
-from magic_pdf.config.ocr_content_type import BlockType
-from magic_pdf.data.data_reader_writer import DataWriter
-from magic_pdf.data.dataset import PymuDocDataset
-from magic_pdf.dict2md.ocr_mkcontent import merge_para_with_text
-from magic_pdf.model.doc_analyze_by_custom_model import doc_analyze
 
-class PdfTextReader(BaseReader):
+
+class PdfDefaultTextReader(BaseReader):
     """
         Read text pdf
     """
@@ -67,8 +63,8 @@ class PdfTextReader(BaseReader):
                 )
                 for block in text_blocks:
                     # Expand 1px
-                    if (block.x0 - 1 <= x0 and block.six_y0 - 1 <= y0 and
-                            block.x1 + 1 >= x1 and block.six_y1 + 1 >= y1):
+                    if (block.x0 - 2 <= x0 and block.six_y0 - 2 <= y0 and
+                            block.x1 + 2 >= x1 and block.six_y1 + 2 >= y1):
                         block.text = block.text + text
                         # Calculate percentages
                         block.x0 = block.x0 / pix.width
@@ -89,7 +85,7 @@ class PdfTextReader(BaseReader):
                         max_font_size = sub_obj.size if sub_obj.size > max_font_size else max_font_size
         return max_font_size
 
-class PdfOcrReader(BaseReader):
+class PdfDefaultOcrReader(BaseReader):
     """
         use YOLO 、paddleocr
     """
@@ -131,9 +127,19 @@ class MinerUReader(BaseReader):
         see https://github.com/opendatalab/MinerU
     """
 
+    def __init__(self, file, mode):
+        """
+        init
+        :param file: file
+        :param mode: OCR or TEXT
+        """
+        super().__init__(file)
+        self.mode = mode
+
     @staticmethod
     def mineru_block_to_text_block(block, is_bold, page_width, page_height) -> TextBlock:
-        print(block)
+        from magic_pdf.dict2md.ocr_mkcontent import merge_para_with_text
+
         bbox = block['bbox']
         # Font size is taken from the first line
         first_line_bbox = block['lines'][0]['bbox']
@@ -152,6 +158,8 @@ class MinerUReader(BaseReader):
 
     @staticmethod
     def para_to_text_block(para_block, page_width, page_height) -> List[TextBlock]:
+        from magic_pdf.config.ocr_content_type import BlockType
+
         para_type = para_block['type']
         text_blocks = []
         if para_type in [BlockType.Text, BlockType.List, BlockType.Index, BlockType.Title] and para_block['lines']:
@@ -190,6 +198,9 @@ class MinerUReader(BaseReader):
 
 
     def read(self) -> List[ReaderResult]:
+        from magic_pdf.data.data_reader_writer import DataWriter
+        from magic_pdf.data.dataset import PymuDocDataset
+        from magic_pdf.model.doc_analyze_by_custom_model import doc_analyze
 
         # No need to write img
         class NoneWriter(DataWriter):
@@ -201,9 +212,26 @@ class MinerUReader(BaseReader):
 
         ds = PymuDocDataset(self.file.read())
 
-        infer_result = ds.apply(doc_analyze, ocr=True)
+        if self.mode == 'TEXT':
+            infer_result = ds.apply(doc_analyze, ocr=False)
 
-        pipe_result = infer_result.pipe_ocr_mode(image_writer)
+            pipe_result = infer_result.pipe_txt_mode(image_writer)
+        else:
+            infer_result = ds.apply(doc_analyze, ocr=True)
+
+            pipe_result = infer_result.pipe_ocr_mode(image_writer)
 
         res = MinerUReader.info_dict_to_result(pipe_result._pipe_res['pdf_info'])
         return res
+
+
+class MinerUTextReader(MinerUReader):
+
+    def __init__(self, file):
+        super().__init__(file, 'TEXT')
+
+
+class MinerUOcrReader(MinerUReader):
+
+    def __init__(self, file):
+        super().__init__(file, 'OCR')

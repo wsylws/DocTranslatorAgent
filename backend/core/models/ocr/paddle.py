@@ -8,7 +8,6 @@
 # Description：
 """
 from paddleocr import PaddleOCR as Paddle
-import numpy as np
 
 ocr = Paddle(use_angle_cls=True, lang='en')
 

@@ -4,6 +4,12 @@ base_url = ""
 api_key = ""
 model = ""
 
+# llm reader
 [llm]
 activate_llm = "OpenAILlm"
 llm_config = "openai"
+
+# baidu reader
+[baidu]
+appid=""
+appkey=""

@@ -7,10 +7,10 @@
 # Author     ：vince
 # Description：
 """
-from core.reader.pdf import PdfTextReader
+from core.reader.pdf import PdfDefaultTextReader
 
 if __name__ == "__main__":
-    file_path = 'C:/Users/41593/Downloads/attention is all you need.pdf'
+    file_path = 'attention is all you need.pdf'
     with open(file_path, 'rb') as file:
-        res = PdfTextReader(file).read()
+        res = PdfDefaultTextReader(file).read()
         print(res)

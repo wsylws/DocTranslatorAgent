@@ -20,5 +20,6 @@ class Configuration:
             activate_llm_name = config_data['llm']['activate_llm']
             config = config_data['llm']['llm_config']
             self.llm = llm_map.get(activate_llm_name)(**config_data[config])
+            self.baidu = config_data['baidu']
 
 configuration = Configuration()

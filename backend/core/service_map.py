@@ -8,17 +8,20 @@
 # Description：
 """
 from core.models.llm.openai_llm import OpenAILlm
-from core.reader.pdf import PdfTextReader, PdfOcrReader, MinerUReader
+from core.reader.pdf import PdfDefaultTextReader, PdfDefaultOcrReader, MinerUTextReader, MinerUOcrReader
+from core.translator.baidu import BaiduTranslator
 from core.translator.llm import LlmTranslator
 
 reader_map: dict = {
-    "PdfTextReader": PdfTextReader,
-    "PdfOcrReader": PdfOcrReader,
-    "MinerUReader": MinerUReader
+    "PdfDefaultTextReader": PdfDefaultTextReader,
+    "PdfDefaultOcrReader": PdfDefaultOcrReader,
+    "MinerUTextReader": MinerUTextReader,
+    "MinerUOcrReader": MinerUOcrReader
 }
 
 translator_map: dict = {
-    "LlmTranslator": LlmTranslator
+    "LlmTranslator": LlmTranslator,
+    "BaiduTranslator": BaiduTranslator
 }
 
 llm_map: dict = {

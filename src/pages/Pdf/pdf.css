@@ -1,0 +1,116 @@
+/* pdf.css */
+.pdf-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.pdf-columns {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.pdf-container p {
+  margin-top: 20px;
+}
+
+.pdf-column {
+  flex: 1;
+  margin: 10px;
+  height:fit-content;
+}
+
+
+.overlay {
+  position: absolute;
+  z-index: 2000;
+}
+
+.overlay-container {
+  background-color: #fff;
+  cursor: pointer;
+  font-size: calc(var(--scale-factor)*var(--base-font-size));
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  word-wrap: break-word
+}
+
+.overlay-container:after {
+  background-image: linear-gradient(180deg,transparent,#fff);
+  bottom: 0;
+  content: "";
+  height: 20px;
+  left: 0;
+  max-height: calc(100% - 8px);
+  position: absolute;
+  right: 0
+}
+
+.overlay-container:hover {
+  height: -webkit-fit-content;
+  height: -moz-fit-content;
+  height: fit-content;
+  padding-bottom: 12px
+}
+
+.overlay-container:hover:after {
+  display: none
+}
+
+.paragraph-element {
+  color: rgba(0,0,0,.7)!important;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.translate-overlay:hover {
+  z-index: 2001!important;
+}
+
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8); /* 半透明背景 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border-left-color: #09f;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}

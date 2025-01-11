@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, memo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css'; // 导入 TextLayer 的 CSS 文件
@@ -23,6 +23,67 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
   import.meta.url
 ).toString();
+
+const useTranslatedText = (text) => {
+  const [parsedText, setParsedText] = useState(text);
+
+  const parseMathJax = (text) => {
+    const inlineMathPattern = /(\$\$?)(?!<)[^\$]+(?<!\$)\1|\\\((.*?)\\\)/g;
+    const blockMathPattern = /\$\$(.*?)\$\$|\\\[(.*?)\\\]/gs;
+
+    // 替换行内公式
+    let result = text.replace(inlineMathPattern, (match) => (
+      `<span class="math-inline">${match}</span>`
+    ));
+
+    // 替换块级公式
+    result = result.replace(blockMathPattern, (match) => (
+      `<div class="math-block">${match}</div>`
+    ));
+    return result;
+  };
+
+  useEffect(() => {
+    if (text) {
+      const parsed = parseMathJax(text);
+      setParsedText(parsed);
+    }
+  }, [text]);
+
+  useEffect(() => {
+    if (window.MathJax && parsedText) {
+      window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
+    }
+  }, [parsedText]);
+
+  return parsedText;
+};
+
+const TranslatedText = memo(({ item, page, index }) => {
+  const parsedText = useTranslatedText(item.translate_text);
+
+  return (
+    <div key={`translated_text_${index}`}
+      className="overlay translate-overlay"
+      style={{
+        left: item.x0 * 100 + '%',
+        top: item.y0 * 100 + '%',
+        width: (item.x1 - item.x0) * 100 + '%',
+        height: (item.y1 - item.y0) * 100 + '%',
+      }}>
+      <div className="overlay-container">
+        <div className="paragraph-element"
+          style={{
+            fontSize: item.font_size + 'px',
+            fontWeight: item.is_bold ? 'bold' : 'normal'
+          }}
+        >
+          <div dangerouslySetInnerHTML={{ __html: parsedText }}></div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const PdfView = (props) => {
   const [numPages, setNumPages] = useState(null);
@@ -71,15 +132,6 @@ const PdfView = (props) => {
       translate();
     }
   }, [currentPage]);
-
-
-  useEffect(() => {
-    // 确保 MathJax 已加载
-    console.log('MathJax is loaded:', translatedTexts[currentPage])
-    if (window.MathJax) {
-      window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
-    }
-  }, [translatedTexts]);
 
   const translate = async () => {
     let index = 0;
@@ -170,53 +222,7 @@ const PdfView = (props) => {
     }
   };
 
-  const parseMathJax = (text, page, index) => {
-    console.log('TET')
-    // console.log(page, index)
-    if(translatedTexts[page][index].isParsed) {
-      return text
-    }
 
-    console.log('TET1')
-    const inlineMathPattern = /(\$\$?)(?!<)[^\$]+(?<!\$)\1|\\\((.*?)\\\)/g;
-    const blockMathPattern = /\$\$(.*?)\$\$|\\\[(.*?)\\\]/gs;
-
-    // 替换行内公式
-    let result = text.replace(inlineMathPattern, (match) => (
-      `<span class="math-inline">${match}</span>`
-    ));
-
-    // 替换块级公式
-    result = result.replace(blockMathPattern, (match) => (
-      `<div class="math-block">${match}</div>`
-    ));
-    translatedTexts[currentPage][index].isParsed = true
-    return result;
-  };
-
-  // const TranslatedText = memo(({ item }) => {
-  //   return (
-  //     <div className="overlay translate-overlay"
-  //       style={{
-  //         left: item.x0 * 100 + '%',
-  //         top: item.y0 * 100 + '%',
-  //         width: (item.x1 - item.x0) * 100 + '%',
-  //         height: (item.y1 - item.y0) * 100 + '%',
-  //       }}>
-  //       <div className="overlay-container">
-  //         <div className="paragraph-element"
-  //           style={{
-  //             fontSize: item.font_size + 'px',
-  //             fontWeight: item.is_bold ? 'bold' : 'normal'
-  //           }}
-  //         >
-  //           <div dangerouslySetInnerHTML={{ __html: parseMathJax(item.translate_text) }}></div>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // });
-  
   return (
     <div className="pdf-container">
       <div className="pdf-columns" ref={containerRef}>
@@ -255,25 +261,12 @@ const PdfView = (props) => {
                   {
                     translatedTexts[index + 1] &&
                     translatedTexts[index + 1].map((item, i) => (
-                      <div key={`translated_text_${i}`}
-                        className="overlay translate-overlay"
-                        style={{
-                          left: item.x0 * 100 + '%',
-                          top: item.y0 * 100 + '%',
-                          width: (item.x1 - item.x0) * 100 + '%',
-                          height: (item.y1 - item.y0) * 100 + '%',
-                        }}>
-                        <div className="overlay-container">
-                          <div className="paragraph-element"
-                            style={{
-                              fontSize: item.font_size + 'px',
-                              fontWeight: item.is_bold ? 'bold' : 'normal'
-                            }}
-                          >
-                            <div dangerouslySetInnerHTML={{ __html: parseMathJax(item.translate_text, index+ 1, i) }}></div>
-                          </div>
-                        </div>
-                      </div>
+                      <TranslatedText
+                        key={`translated_text_${i}`}
+                        item={item}
+                        page={index + 1}
+                        index={i}
+                      />
                     ))
                   }
                 </Page>

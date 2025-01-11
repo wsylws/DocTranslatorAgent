@@ -4,8 +4,6 @@ import api from '../../api/index';
 import './styles.css'; // 导入自定义样式文件
 import PdfView from './pdfView';
   
-const languages =  ['English', 'Chinese', 'Spanish', 'French', 'German', 'Japanese', 'Korean', 'Arabic']
-
 const MyDocument = () => {
   const [file, setFile] = useState('');
   const [fileStrem, setFileStrem] = useState(null);
@@ -15,6 +13,7 @@ const MyDocument = () => {
   const [readers, setReaders] = useState([]);
   const [translators, setTranslators] = useState([]);
   const [textBlock, setTextBlock] = useState([])
+  const [languageList, setLanguageList] = useState([]);
   const [sourceLang, setSourceLang] = useState('English');
   const [targetLang, setTargetLang] = useState('Chinese');
   const [error, setError] = useState(''); 
@@ -22,6 +21,7 @@ const MyDocument = () => {
   useEffect(() => {
     getReaders();
     getTranslators();
+    getLanguage()
   }, []);
 
   // 获取翻译器类型列表
@@ -40,6 +40,16 @@ const MyDocument = () => {
     try {
       const res = await api.get('/translators');
       setTranslators(res);
+    } catch (err) {
+      console.error('Error fetching readers:', err);
+    }
+  };
+
+  // 获取翻译器列表
+  const getLanguage = async () => {
+    try {
+      const res = await api.get('/support_language');
+      setLanguageList(res);
     } catch (err) {
       console.error('Error fetching readers:', err);
     }
@@ -172,9 +182,9 @@ const MyDocument = () => {
             className="select-style"
           >
             <option value="">Select source lang</option>
-            {languages.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            {languageList.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
@@ -183,10 +193,10 @@ const MyDocument = () => {
             onChange={handleTargetSelectChange}
             className="select-style"
           >
-            <option value="">Select target</option>
-            {languages.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            <option value="">Select target lang</option>
+            {languageList.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
